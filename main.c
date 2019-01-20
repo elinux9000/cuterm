@@ -1,99 +1,109 @@
+#include <ncurses.h>
 
-#include <curses.h>
-#include <menu.h>
+int barmenu(const char **array, const int row, const int col, const int arraylength, const int width, int menulength, int selection);
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
-#define CTRLD 	4
-
-char *choices[] = {
-                        "Choice 1", "Choice 2", "Choice 3", "Choice 4", "Choice 5",
-			"Choice 6", "Choice 7", "Choice 8", "Choice 9", "Choice 10",
-			"Choice 11", "Choice 12", "Choice 13", "Choice 14", "Choice 15",
-			"Choice 16", "Choice 17", "Choice 18", "Choice 19", "Choice 20",
-                        "Exit",
-                        (char *)NULL,
-                  };
-
-int main()
-{	
-	ITEM **my_items;
-	int c;				
-	MENU *my_menu;
-        WINDOW *my_menu_win;
-        int n_choices, i;
-	
-	/* Initialize curses */
+int main(void)
+{
+	int selection,row=1, col=10, arraylength=10, width=5, menulength=5;
+	const char *testarray[]= {"Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"};
 	initscr();
-	start_color();
-        cbreak();
-        noecho();
-	keypad(stdscr, TRUE);
-	init_pair(1, COLOR_RED, COLOR_BLACK);
-	init_pair(2, COLOR_CYAN, COLOR_BLACK);
+	noecho();
+	keypad(stdscr,TRUE);
 
-	/* Create items */
-        n_choices = ARRAY_SIZE(choices);
-        my_items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
-        for(i = 0; i < n_choices; ++i)
-                my_items[i] = new_item(choices[i], choices[i]);
+	selection=barmenu(testarray,row,col,arraylength,width,menulength,3);
 
-	/* Create menu */
-	my_menu = new_menu((ITEM **)my_items);
-
-	/* Set menu option not to show the description */
-	menu_opts_off(my_menu, O_SHOWDESC);
-
-	/* Create the window to be associated with the menu */
-        my_menu_win = newwin(10, 70, 4, 4);
-        keypad(my_menu_win, TRUE);
-     
-	/* Set main window and sub window */
-        set_menu_win(my_menu, my_menu_win);
-        set_menu_sub(my_menu, derwin(my_menu_win, 6, 68, 3, 1));
-	set_menu_format(my_menu, 5, 3);
-	set_menu_mark(my_menu, " * ");
-
-	/* Print a border around the main window and print a title */
-        box(my_menu_win, 0, 0);
-	
-	attron(COLOR_PAIR(2));
-	mvprintw(LINES - 3, 0, "Use PageUp and PageDown to scroll");
-	mvprintw(LINES - 2, 0, "Use Arrow Keys to navigate (F1 to Exit)");
-	attroff(COLOR_PAIR(2));
+	mvprintw(15,0,"Selection= %d",selection);
 	refresh();
+	getch();
 
-	/* Post the menu */
-	post_menu(my_menu);
-	wrefresh(my_menu_win);
-	
-	while((c = wgetch(my_menu_win)) != KEY_F(1))
-	{       switch(c)
-	        {	case KEY_DOWN:
-				menu_driver(my_menu, REQ_DOWN_ITEM);
-				break;
-			case KEY_UP:
-				menu_driver(my_menu, REQ_UP_ITEM);
-				break;
-			case KEY_LEFT:
-				menu_driver(my_menu, REQ_LEFT_ITEM);
-				break;
-			case KEY_RIGHT:
-				menu_driver(my_menu, REQ_RIGHT_ITEM);
-				break;
-			case KEY_NPAGE:
-				menu_driver(my_menu, REQ_SCR_DPAGE);
-				break;
-			case KEY_PPAGE:
-				menu_driver(my_menu, REQ_SCR_UPAGE);
-				break;
-		}
-                wrefresh(my_menu_win);
-	}	
-
-	/* Unpost and free all the memory taken up */
-        unpost_menu(my_menu);
-        free_menu(my_menu);
-        for(i = 0; i < n_choices; ++i)
-                free_item(my_items[i]);
 	endwin();
+	return 0;
+}
+
+int barmenu(const char **array,const int row, const int col, const int arraylength, const int width, int menulength, int selection)
+{
+	int counter;
+	int offset=0;
+	int ky=0;
+	char formatstring[7];
+	curs_set(0);
+
+	if (arraylength < menulength)
+		menulength=arraylength;
+
+	if (selection > menulength)
+		offset=selection-menulength+1;
+
+	sprintf(formatstring,"%%-%ds",width); // remove - sign to right-justify the menu items
+
+	while(ky != 27) {
+		for (counter=0; counter < menulength; counter++) {
+			if (counter+offset==selection)
+				attron(A_REVERSE);
+			mvprintw(row+counter,col,formatstring,array[counter+offset]);
+			attroff(A_REVERSE);
+		}
+
+		ky=getch();
+
+		switch(ky) {
+		case KEY_UP:
+			if (selection) {
+				selection--;
+				if (selection < offset)
+					offset--;
+			}
+			break;
+		case KEY_DOWN:
+			if (selection < arraylength-1) {
+				selection++;
+				if (selection > offset+menulength-1)
+					offset++;
+			}
+			break;
+		case KEY_HOME:
+			selection=0;
+			offset=0;
+			break;
+		case KEY_END:
+			selection=arraylength-1;
+			offset=arraylength-menulength;
+			break;
+		case KEY_PPAGE:
+			selection-=menulength;
+			if (selection < 0)
+				selection=0;
+			offset-=menulength;
+			if (offset < 0)
+				offset=0;
+			break;
+		case KEY_NPAGE:
+			selection+=menulength;
+			if (selection > arraylength-1)
+				selection=arraylength-1;
+			offset+=menulength;
+			if (offset > arraylength-menulength)
+				offset=arraylength-menulength;
+			break;
+		case 10: //enter
+			return selection;
+			break;
+		case KEY_F(1): // function key 1
+			return -1;
+		case 27: //esc
+			// esc twice to get out, otherwise eat the chars that don't work
+			//from home or end on the keypad
+			ky=getch();
+			if (ky == 27) {
+				curs_set(0);
+				mvaddstr(9,77,"   ");
+				return -1;
+			} else if (ky=='[') {
+				getch();
+				getch();
+			} else
+				ungetch(ky);
+		}
+	}
+	return -1;
 }
