@@ -1,14 +1,24 @@
 #include <ncurses.h>
+#include <string.h>
+#include <signal.h>
 
+void do_resize(int dummy)
+{
+	border(0,0,0,0,0,0,0,0);
+}
 int barmenu(const char **array, const int row, const int col, const int arraylength, const int width, int menulength, int selection);
-
 int main(void)
 {
 	int selection,row=1, col=10, arraylength=10, width=5, menulength=5;
 	const char *testarray[]= {"Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"};
+	WINDOW win;
+	signal(SIGWINCH, do_resize);
 	initscr();
 	noecho();
 	keypad(stdscr,TRUE);
+	border(0,0,0,0,0,0,0,0);//chtype ls, chtype rs, chtype ts, chtype bs, chtype tl, chtype tr, chtype bl, chtype br);
+
+	//box(win,0,0);
 
 	selection=barmenu(testarray,row,col,arraylength,width,menulength,3);
 
@@ -20,11 +30,12 @@ int main(void)
 	return 0;
 }
 
-int barmenu(const char **array,const int row, const int col, const int arraylength, const int width, int menulength, int selection)
+int barmenu(const char **array,const int row, int column, const int arraylength, const int width, int menulength, int selection)
 {
 	int counter;
 	int offset=0;
 	int ky=0;
+	int col;
 	char formatstring[7];
 	curs_set(0);
 
@@ -37,24 +48,27 @@ int barmenu(const char **array,const int row, const int col, const int arrayleng
 	sprintf(formatstring,"%%-%ds",width); // remove - sign to right-justify the menu items
 
 	while(ky != 27) {
+		col = column;
 		for (counter=0; counter < menulength; counter++) {
 			if (counter+offset==selection)
 				attron(A_REVERSE);
-			mvprintw(row+counter,col,formatstring,array[counter+offset]);
+			mvprintw(row,col,formatstring,array[counter+offset]);
+			//printf("123\n");
+			col +=strlen(array[counter+offset])+1;
 			attroff(A_REVERSE);
 		}
 
 		ky=getch();
 
 		switch(ky) {
-		case KEY_UP:
+		case KEY_LEFT:
 			if (selection) {
 				selection--;
 				if (selection < offset)
 					offset--;
 			}
 			break;
-		case KEY_DOWN:
+		case KEY_RIGHT:
 			if (selection < arraylength-1) {
 				selection++;
 				if (selection > offset+menulength-1)
