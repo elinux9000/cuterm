@@ -12,6 +12,11 @@ int main(void)
 	int selection,row=1, col=10, arraylength=10, width=5, menulength=5;
 	const char *testarray[]= {"Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"};
 	WINDOW win;
+
+	return panel();
+	return main_menu();
+
+
 	signal(SIGWINCH, do_resize);
 	initscr();
 	noecho();
