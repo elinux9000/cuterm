@@ -23,14 +23,29 @@ struct box_tag
 	int height;
 };
 typedef struct box_tag BOX;
+enum state_tag
+{
+	UNDISPLAYED=0,DISPLAYED
+};
+typedef enum state_tag MENU_STATE;
 struct menu_tag
 {
 	WINDOW *win;
 	PANEL  *panel;
 	BOX	box;
+	struct menu_tag *parent;
+	struct menu_tag **items;
+	char	*title;
+	void(*action)(struct menu_tag *self);
 	char 	**menu_items;
 	unsigned number_of_menu_items;
 	unsigned width;
+	MENU_STATE state;
+	signed selected;
+	void (*select_right)(struct menu_tag *self);
+	void (*select_left)(struct menu_tag *self);
+	void (*select)(struct menu_tag *self);
+	void (*constructor)(struct menu_tag *self);
 };
 typedef struct menu_tag MY_MENU;
 

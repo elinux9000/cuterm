@@ -6,6 +6,8 @@
 #include "my_menu.h"
 
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
+int print_top_item(MY_MENU *menu);
+void print_all_items(MY_MENU *m);
 int main1()
 {
 	char mesg[]="Just a string";		/* message to be appeared on the screen */
@@ -37,6 +39,50 @@ char *choices[] = {
                         (char *)NULL,
                   };
 
+void print_menu_title(MY_MENU *m)
+{
+	if (m->win) {
+		delwin(m->win);
+		m->win = NULL;
+	}
+	m->win = newwin(3,m->box.width,m->box.y,m->box.x);
+	box(m->win, 0, 0);
+	if (m->panel)
+		replace_panel(m->panel,m->win);
+	else
+		m->panel = new_panel(m->win);
+	print_top_item(m);
+
+}
+void print_menu_all(MY_MENU *m)
+{
+	if (m->win) {
+		delwin(m->win);
+		m->win = NULL;
+	}
+	m->win = newwin(m->box.height,m->box.width,m->box.y,m->box.x);
+	box(m->win, 0, 0);
+	if (m->panel)
+		replace_panel(m->panel,m->win);
+	else
+		m->panel = new_panel(m->win);
+	print_all_items(m);
+}
+void print_all_items(MY_MENU *m)
+{
+	for (int j=0;strlen(m->menu_items[j])>0;j++) {
+		int x;
+		if (j == 0) {
+			print_top_item(m);
+		}
+		else {
+			x=2;
+			mvwprintw(m->win,1+j,x,m->menu_items[j]);
+		}
+	}
+	update_panels();
+	doupdate();
+}
 void create_window_top(MY_MENU *m)
 {
 	m->win = newwin(3,m->box.width,m->box.y,m->box.x);
@@ -67,7 +113,6 @@ int print_top_item(MY_MENU *menu)
 	mvwprintw(menu->win,1,1,menu->menu_items[0]);
 	mvwchgat(menu->win,1,1,1,A_BOLD|A_UNDERLINE,1,NULL);
 	return EXIT_SUCCESS;
-
 }
 int create_panel_top(MY_MENU *menu)
 {
@@ -95,7 +140,9 @@ int panel(void)
 {
 	int y=1;
 
-	MY_MENU my_menu[4];
+	MY_MENU my_menu[4]={{0}};
+	//MY_MENU *current_menu = NULL;
+
 	char *menu0_items[] = {"File","Send","Save","Save as","\0"};	//last item must have strlen of zero
 	char *menu1_items[] = {"Edit","Copy","Paste","Copy all","\0"};
 	char *menu2_items[] = {"Screen","Clear screen","222","333","\0"};
@@ -110,7 +157,18 @@ int panel(void)
 	cbreak();	//Disable buffering but unlike raw() allow control-c to send SIGINT
 	noecho();	//Don't echo keys
 	keypad(stdscr,TRUE);	//Enable arrow and function keys
+	//
+		int screen_width=0;
+		int screen_height=0;
+		getmaxyx(stdscr,screen_height,screen_width);
 
+		WINDOW *main_window = newwin(screen_height-4,screen_width,4,0);
+				box(main_window,0,0);
+		PANEL 	*panel = new_panel(main_window);
+
+		(void)panel;	//To avoid unused variable compiler error
+
+	//
 	int x_pos=0;
 	for (int i=0;i<ARRAY_SIZE(my_menu); i++) {
 		my_menu[i].menu_items = menu_items[i];
@@ -122,21 +180,10 @@ int panel(void)
 		my_menu[i].box=(BOX){x_pos,y,my_menu[i].width,my_menu[i].number_of_menu_items+2};
 		x_pos += my_menu[i].width;
 
-		create_window_top(&my_menu[i]);
-		create_panel_top(&my_menu[i]);
+		print_menu_title(&my_menu[i]);
+		//print_menu_all(&my_menu[i]);
 	}
-	//
-	int screen_width=0;
-	int screen_height=0;
-	getmaxyx(stdscr,screen_height,screen_width);
 
-	WINDOW *main_window = newwin(screen_height-4,screen_width,4,0);
-			box(main_window,0,0);
-	PANEL 	*panel = new_panel(main_window);
-
-	(void)panel;	//To avoid unused variable compiler error
-
-	//
 	curs_set(0);
 	/* Update the stacking order. 2nd panel will be on top */
 	update_panels();
@@ -145,23 +192,36 @@ int panel(void)
 	doupdate();
 
 	int ch;
+	int alt_pressed = 0;
 	while ((ch = getch()) != ERR) {
-		int alt_pressed = 0;
+
 		if (alt_pressed==1)
 			alt_pressed = 2;
 		switch (ch) {
 			case KEY_RIGHT:
-				//current_menu = (current_menu+1)%4;
+				//current_menu->select_right();
+				break;
+			case KEY_LEFT:
+				//current_menu->select_left();
 				break;
 			case 27:
+			case 195:	//code in xterm
 				alt_pressed = 1;
-				wprintw(main_window,"ALT %d\n",ch);
 				break;
-			case 166:
-				wprintw(main_window,"ALT_F %d\n",ch);
-				break;
+			case 102:
+			case 166:	//code in xterm
+				if (alt_pressed == 2) {
+					//wprintw(main_window,"ALT_F %d\n",ch);
+					//wrefresh(main_window);
+					//current_menu = &my_menu[0];
+					//current_menu->select();
+					print_menu_all(&my_menu[0]);
+
+					break;
+				}
+				//No break - goto default
 			default:
-				wprintw(main_window,"key=%u\n",ch);
+				wprintw(main_window,"a=%u key=%u\n",alt_pressed,ch);
 				wrefresh(main_window);
 				break;
 		}
