@@ -1,7 +1,9 @@
+#include <stdlib.h>
 #include <ncurses.h>			/* ncurses.h includes stdio.h */
 #include <string.h>
 #include <menu.h>
 #include <panel.h>
+#include "my_menu.h"
 
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 int main1()
@@ -35,19 +37,161 @@ char *choices[] = {
                         (char *)NULL,
                   };
 
-int panel(void)
-{	WINDOW *my_wins[3];
-	PANEL  *my_panels[3];
-	int lines = 10, cols = 40, y = 2, x = 4, i;
+void create_window_top(MY_MENU *m)
+{
+	m->win = newwin(3,m->box.width,m->box.y,m->box.x);
+}
+void create_window_all(MY_MENU *m)
+{
+	m->win = newwin(m->box.height,m->box.width,m->box.y,m->box.x);
+}
+int create_panel_all(MY_MENU *menu)
+{
+	box(menu->win, 0, 0);
+	menu->panel = new_panel(menu->win);
 
-	initscr();
-	cbreak();
-	noecho();
+	for (int j=0;strlen(menu->menu_items[j])>0;j++) {
+		int x;
+		if (j == 0) {
+			x=1;
+		}
+		else
+			x=2;
+		mvwprintw(menu->win,1+j,x,menu->menu_items[j]);
+	}
+	return EXIT_SUCCESS;
+}
+int print_top_item(MY_MENU *menu)
+{
+	wattron(menu->win,A_BOLD);
+	mvwprintw(menu->win,1,1,menu->menu_items[0]);
+	mvwchgat(menu->win,1,1,1,A_BOLD|A_UNDERLINE,1,NULL);
+	return EXIT_SUCCESS;
+
+}
+int create_panel_top(MY_MENU *menu)
+{
+	box(menu->win, 0, 0);
+	menu->panel = new_panel(menu->win);
+	print_top_item(menu);
+	return EXIT_SUCCESS;
+}
+unsigned count_items(char *list[])
+{
+	unsigned j;
+	for (j=0;strlen(list[j])>0 && j<MAX_MENU_ITEMS;j++);
+	return j;
+}
+unsigned find_max_strlen(char *list[])
+{
+	unsigned len=0;
+	unsigned max=0;
+	for (int j=0;(len=strlen(list[j]))>0 && j<MAX_MENU_ITEMS;j++)
+		if (max<len)
+			max=len;
+	return max+3;
+}
+int panel(void)
+{
+	int y=1;
+
+	MY_MENU my_menu[4];
+	char *menu0_items[] = {"File","Send","Save","Save as","\0"};	//last item must have strlen of zero
+	char *menu1_items[] = {"Edit","Copy","Paste","Copy all","\0"};
+	char *menu2_items[] = {"Screen","Clear screen","222","333","\0"};
+	char *menu3_items[] = {"Configuration","Port","Echo","Line termination","Load configuration","Save configuration","\0"};
+
+	char **menu_items[] = {menu0_items,menu1_items,menu2_items,menu3_items};
+
+
+	//BOX b = {x,y,width,height};
+
+	initscr();	//Start curses mode
+	cbreak();	//Disable buffering but unlike raw() allow control-c to send SIGINT
+	noecho();	//Don't echo keys
+	keypad(stdscr,TRUE);	//Enable arrow and function keys
+
+	int x_pos=0;
+	for (int i=0;i<ARRAY_SIZE(my_menu); i++) {
+		my_menu[i].menu_items = menu_items[i];
+		my_menu[i].number_of_menu_items = count_items(my_menu[i].menu_items);
+		my_menu[i].width = find_max_strlen(my_menu[i].menu_items);
+
+		dbg_printf("number_of_menu_items=%u\n",my_menu[i].number_of_menu_items);
+
+		my_menu[i].box=(BOX){x_pos,y,my_menu[i].width,my_menu[i].number_of_menu_items+2};
+		x_pos += my_menu[i].width;
+
+		create_window_top(&my_menu[i]);
+		create_panel_top(&my_menu[i]);
+	}
+	//
+	int screen_width=0;
+	int screen_height=0;
+	getmaxyx(stdscr,screen_height,screen_width);
+
+	WINDOW *main_window = newwin(screen_height-4,screen_width,4,0);
+			box(main_window,0,0);
+	PANEL 	*panel = new_panel(main_window);
+
+	(void)panel;	//To avoid unused variable compiler error
+
+	//
+	curs_set(0);
+	/* Update the stacking order. 2nd panel will be on top */
+	update_panels();
+
+	/* Show it on the screen */
+	doupdate();
+
+	int ch;
+	while ((ch = getch()) != ERR) {
+		int alt_pressed = 0;
+		if (alt_pressed==1)
+			alt_pressed = 2;
+		switch (ch) {
+			case KEY_RIGHT:
+				//current_menu = (current_menu+1)%4;
+				break;
+			case 27:
+				alt_pressed = 1;
+				wprintw(main_window,"ALT %d\n",ch);
+				break;
+			case 166:
+				wprintw(main_window,"ALT_F %d\n",ch);
+				break;
+			default:
+				wprintw(main_window,"key=%u\n",ch);
+				wrefresh(main_window);
+				break;
+		}
+		if (alt_pressed==2)
+			alt_pressed = 0;
+
+
+
+	}
+	endwin();
+	return EXIT_SUCCESS;
+}
+int panel_working(void)
+{
+	int lines = 10, cols = 20, y = 2, x = 4, i;
+	WINDOW *my_wins[3];
+	PANEL  *my_panels[3];
+
+
+	initscr();	//Start curses mode
+	cbreak();	//Disable buffering but unlike raw() allow control-c to send SIGINT
+	noecho();	//Don't echo keys
+	keypad(stdscr,TRUE);	//Enable arrow and function keys
+
+	my_wins[0] = (WINDOW *)my_panels;	//This is just to avoid my_panels set but not used compiler error
 
 	/* Create windows for the panels */
 	my_wins[0] = newwin(lines, cols, y, x);
-	my_wins[1] = newwin(lines, cols, y + 1, x + 5);
-	my_wins[2] = newwin(lines, cols, y + 2, x + 10);
+	my_wins[1] = newwin(lines, cols, y, x + cols);
+	my_wins[2] = newwin(lines, cols, y, x + cols*2);
 
 	/*
 	 * Create borders around the windows so that you can see the effect
@@ -61,86 +205,24 @@ int panel(void)
 	my_panels[1] = new_panel(my_wins[1]); 	/* Push 1, order: stdscr-0-1 */
 	my_panels[2] = new_panel(my_wins[2]); 	/* Push 2, order: stdscr-0-1-2 */
 
+
+	wattron(my_wins[2],A_BOLD);
+	mvwprintw(my_wins[2],5,5,"ramon");
+	mvwchgat(my_wins[2],5,5,1,A_BLINK,1,NULL);
+	curs_set(0);
+
 	/* Update the stacking order. 2nd panel will be on top */
 	update_panels();
 
 	/* Show it on the screen */
 	doupdate();
 
-	getch();
+	while (1)
+		getch();
 	endwin();
+	return EXIT_SUCCESS;
 }
 
-int main_menu(void)
-{
-	ITEM **my_items;
-	int c;
-	MENU *my_menu;
-        WINDOW *my_menu_win;
-        int n_choices, i;
-
-	/* Initialize curses */
-	initscr();
-	start_color();
-        cbreak();
-        noecho();
-	keypad(stdscr, TRUE);
-	init_pair(1, COLOR_RED, COLOR_BLACK);
-
-	/* Create items */
-        n_choices = ARRAY_SIZE(choices);
-        my_items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
-        for(i = 0; i < n_choices; ++i)
-                my_items[i] = new_item(choices[i],NULL);
-
-	/* Crate menu */
-	my_menu = new_menu((ITEM **)my_items);
-	set_menu_format(my_menu,1,4);
-
-	/* Create the window to be associated with the menu */
-        my_menu_win = newwin(10, 80, 10, 10);
-        keypad(my_menu_win, TRUE);
-
-	/* Set main window and sub window */
-        set_menu_win(my_menu, my_menu_win);
-        //set_menu_sub(my_menu, derwin(my_menu_win, 6, 10, 3, 1));
-
-	/* Set menu mark to the string " * " */
-        set_menu_mark(my_menu, ">");
-
-	/* Print a border around the main window and print a title */
-        box(my_menu_win, 0, 0);
-        box(stdscr, 0, 0);
-	//print_in_middle(my_menu_win, 1, 0, 40, "My Menu", COLOR_PAIR(1));
-	//mvwaddch(my_menu_win, 2, 0, ACS_LTEE);
-	//mvwhline(my_menu_win, 2, 1, ACS_HLINE, 38);
-	//mvwaddch(my_menu_win, 2, 39, ACS_RTEE);
-	//mvprintw(LINES - 2, 0, "F1 to exit");
-	refresh();
-
-	/* Post the menu */
-	post_menu(my_menu);
-	wrefresh(my_menu_win);
-
-	while((c = wgetch(my_menu_win)) != KEY_F(1))
-	{       switch(c)
-	        {	case KEY_LEFT:
-				menu_driver(my_menu, REQ_LEFT_ITEM);
-				break;
-			case KEY_RIGHT:
-				menu_driver(my_menu, REQ_RIGHT_ITEM);
-				break;
-		}
-                wrefresh(my_menu_win);
-	}
-
-	/* Unpost and free all the memory taken up */
-        unpost_menu(my_menu);
-        free_menu(my_menu);
-        for(i = 0; i < n_choices; ++i)
-                free_item(my_items[i]);
-	endwin();
-}
 
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color)
 {	int length, x, y;
