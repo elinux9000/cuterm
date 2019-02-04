@@ -4,41 +4,11 @@
 #include <menu.h>
 #include <panel.h>
 #include "my_menu.h"
-
+#include "application.h"
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 int print_top_item(MY_MENU *menu);
 void print_all_items(MY_MENU *m);
-int main1()
-{
-	char mesg[]="Just a string";		/* message to be appeared on the screen */
-	int row,col;				/* to store the number of rows and *
-					 * the number of colums of the screen */
-	initscr();				/* start the curses mode */
-	getmaxyx(stdscr,row,col);		/* get the number of rows and columns */
-	mvprintw(row/2,(col-strlen(mesg))/2,"%s",mesg);
-	/* print the message at the center of the screen */
-	mvprintw(row-2,0,"This screen has %d rows and %d columns\n",row,col);
-	printw("Try resizing your window(if possible) and then run this program again");
-	refresh();
-	getch();
-	endwin();
-
-	return 0;
-}
-
-
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
-#define CTRLD 	4
-
-char *choices[] = {
-                        "Choice 1",
-                        "Choice 2",
-                        "Choice 3",
-                        "Choice 4",
-                        "Exit",
-                        (char *)NULL,
-                  };
-
 void print_menu_title(MY_MENU *m)
 {
 	if (m->win) {
@@ -136,39 +106,45 @@ unsigned find_max_strlen(char *list[])
 			max=len;
 	return max+3;
 }
+
+typedef struct employee_s employee;
 int panel(void)
 {
-	int y=1;
+	//int y=1;
 
+	MY_APP app={0};
 	MY_MENU my_menu[4]={{0}};
+	MENU_LIST f0 = {"File",NULL};
+	MENU_LIST f1 = {"Send",NULL};
+	MENU_LIST f2 = {"Save",NULL};
+	MENU_LIST f3 = {"Save as",NULL};
+
 	//MY_MENU *current_menu = NULL;
-
-	char *menu0_items[] = {"File","Send","Save","Save as","\0"};	//last item must have strlen of zero
-	char *menu1_items[] = {"Edit","Copy","Paste","Copy all","\0"};
-	char *menu2_items[] = {"Screen","Clear screen","222","333","\0"};
-	char *menu3_items[] = {"Configuration","Port","Echo","Line termination","Load configuration","Save configuration","\0"};
-
-	char **menu_items[] = {menu0_items,menu1_items,menu2_items,menu3_items};
-
-
-	//BOX b = {x,y,width,height};
+	/*MENU_LIST a = {.title="File";.func=NULL};
+	MENU_LIST b = {"File",NULL};
+	(void)a;
+	(void)b;*/
 
 	initscr();	//Start curses mode
 	cbreak();	//Disable buffering but unlike raw() allow control-c to send SIGINT
 	noecho();	//Don't echo keys
 	keypad(stdscr,TRUE);	//Enable arrow and function keys
-	//
-		int screen_width=0;
-		int screen_height=0;
-		getmaxyx(stdscr,screen_height,screen_width);
 
-		WINDOW *main_window = newwin(screen_height-4,screen_width,4,0);
+	app.add_menu = add_menu;
+	MENU_LIST list[] = {f0,f1,f2,f3};
+	add_menu(&app,list);
+
+	int screen_width=0;
+	int screen_height=0;
+	getmaxyx(stdscr,screen_height,screen_width);
+
+	WINDOW *main_window = newwin(screen_height-4,screen_width,4,0);
 				box(main_window,0,0);
 		PANEL 	*panel = new_panel(main_window);
 
 		(void)panel;	//To avoid unused variable compiler error
 
-	//
+	/*//
 	int x_pos=0;
 	for (int i=0;i<ARRAY_SIZE(my_menu); i++) {
 		my_menu[i].menu_items = menu_items[i];
@@ -182,7 +158,7 @@ int panel(void)
 
 		print_menu_title(&my_menu[i]);
 		//print_menu_all(&my_menu[i]);
-	}
+	}*/
 
 	curs_set(0);
 	/* Update the stacking order. 2nd panel will be on top */

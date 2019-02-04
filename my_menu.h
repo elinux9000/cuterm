@@ -28,6 +28,7 @@ enum state_tag
 	UNDISPLAYED=0,DISPLAYED
 };
 typedef enum state_tag MENU_STATE;
+
 struct menu_tag
 {
 	WINDOW *win;
@@ -48,6 +49,12 @@ struct menu_tag
 	void (*constructor)(struct menu_tag *self);
 };
 typedef struct menu_tag MY_MENU;
+struct menu_list
+{
+	char	*title;
+	int (*func)(MY_MENU *self);
+};
+typedef struct menu_list MENU_LIST;
 
 
 #endif /* MY_MENU_H_ */
