@@ -170,7 +170,6 @@ int panel(void)
 	int ch;
 	int alt_pressed = 0;
 	while ((ch = getch()) != ERR) {
-
 		if (alt_pressed==1)
 			alt_pressed = 2;
 		switch (ch) {
