@@ -139,10 +139,10 @@ int panel(void)
 	getmaxyx(stdscr,screen_height,screen_width);
 
 	WINDOW *main_window = newwin(screen_height-4,screen_width,4,0);
-				box(main_window,0,0);
-		PANEL 	*panel = new_panel(main_window);
+	box(main_window,0,0);
+	PANEL 	*panel = new_panel(main_window);
 
-		(void)panel;	//To avoid unused variable compiler error
+	(void)panel;	//To avoid unused variable compiler error
 
 	/*//
 	int x_pos=0;
