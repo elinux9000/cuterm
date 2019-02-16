@@ -8,6 +8,7 @@ do
 	inotifywait -e modify $FILES_TO_MONITOR
 	sleep 0.1
 	fi 
+	clear
 	cscope -b
 	make 
 	if [ $? -eq 0 ]; then

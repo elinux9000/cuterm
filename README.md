@@ -17,15 +17,42 @@ Demonstrate menu item selection and callback.  Demonstrate hierarchical menues
 
 Analysis
 Data structures:
-MY_MENU: 
-A menu has an associated curses window and panel.  The window defines the size of the panel.
-A box contains the size.  A menu has a title, state, parent, and children.
-The children is an array of menus.
+my_menut_t: 
+A menu has the following properties:
+curses window 
+curses panel
+The window defines the size of the panel.
+box contains the size
+title
+state (open or closed)
+parent
+children:an array of menus.
+draw_open: function to call when selected , will depend on selected
+draw_closedll : function to call when deselected
+
+Will need the left and right menus 
+Select with enter key, or alt-letter
+Navigation with arrows
+
+Main loop
+	based on key will select current_menu right left down up
+
+When selected the menu will draw itself
+	This means resizing the window
+When unselected menu will redraw
+
 
 Drawing:
+updatepanels()
+doupdate()
 
 
 Design
+
+
+
+
+
 Implementation
 Test
 

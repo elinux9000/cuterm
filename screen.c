@@ -5,6 +5,8 @@
 #include <panel.h>
 #include "my_menu.h"
 #include "application.h"
+#include "debug.h"
+
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 int print_top_item(MY_MENU *menu);
 void print_all_items(MY_MENU *m);
@@ -280,4 +282,94 @@ void print_in_middle(WINDOW *win, int starty, int startx, int width, char *strin
 	mvwprintw(win, y, x, "%s", string);
 	wattroff(win, color);
 	refresh();
+}
+int panel_1(void)
+{
+	bool debug_output = true;
+	my_menu_t app_menu[4]={{0}};
+	int junk=0;
+
+	initscr();	//Start curses mode
+	cbreak();	//Disable buffering but unlike raw() allow control-c to send SIGINT
+	noecho();	//Don't echo keys
+	keypad(stdscr,TRUE);	//Enable arrow and function keys
+
+	app_menu[0].title = "File";
+	app_menu[1].title = "Edit";
+
+	int screen_width=0;
+	int screen_height=0;
+
+	(void)screen_width;
+	(void)screen_height;
+
+	getmaxyx(stdscr,screen_height,screen_width);
+	screen_height -= Debug_height;
+
+	WINDOW *main_win = newwin(screen_height-4,screen_width,4,0);
+	PANEL *main_panel = new_panel(main_win);
+	box(main_win,0,0);
+	
+	
+	app_menu[0].win = newwin(10,10,0,0);
+	app_menu[0].panel = new_panel(app_menu[0].win);
+	box(app_menu[0].win,0,0);
+
+	debug_init(main_win);
+
+	(void)panel;	//To avoid unused variable compiler error
+
+	curs_set(0);
+	/* Update the stacking order. 2nd panel will be on top */
+	update_panels();
+
+	/* Show it on the screen */
+	doupdate();
+
+	int ch;
+	int alt_pressed = 0;
+	while ((ch = getch()) != ERR) {
+		dbg_printf("char_pressed %d\n",junk);
+		junk++;
+		if (alt_pressed==1)
+			alt_pressed = 2;
+		switch (ch) {
+			case KEY_ENTER:
+				dbg_printf("enter pressed\n");
+				break;
+			case KEY_RIGHT:
+				//current_menu->select_right();
+				break;
+			case KEY_LEFT:
+				//current_menu->select_left();
+				break;
+			case 27:
+			case 195:	//code in xterm
+				alt_pressed = 1;
+				break;
+			case 102:
+			case 166:	//code in xterm
+				if (alt_pressed == 2) {
+					//wprintw(main_window,"ALT_F %d\n",ch);
+					//wrefresh(main_window);
+					//current_menu = &my_menu[0];
+					//current_menu->select();
+					////print_menu_all(&my_menu[0]);
+
+					break;
+				}
+				//No break - goto default
+			default:
+				//wprintw(main_window,"a=%u key=%u\n",alt_pressed,ch);
+				//wrefresh(main_window);
+				break;
+		}
+		if (alt_pressed==2)
+			alt_pressed = 0;
+
+
+
+	}
+	endwin();
+	return EXIT_SUCCESS;
 }

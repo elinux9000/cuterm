@@ -13,8 +13,6 @@
 #include <menu.h>
 #include <panel.h>
 #define MAX_MENU_ITEMS	20
-#define	DEBUG_PRINT false
-#define dbg_printf( ... ) do { if (DEBUG_PRINT) { printf(__VA_ARGS__);printw(__VA_ARGS__);} }while(0)
 struct box_tag
 {
 	int x;
@@ -28,6 +26,28 @@ enum state_tag
 	UNDISPLAYED=0,DISPLAYED
 };
 typedef enum state_tag MENU_STATE;
+
+
+
+typedef struct my_menu_tag {
+	WINDOW *win;
+	PANEL *panel;
+	BOX 	box;
+	struct my_menu_tag *parent;
+	struct my_menu_tag **items;
+	char *title;
+
+} my_menu_t;
+
+
+
+
+
+
+
+
+
+
 
 struct menu_tag
 {

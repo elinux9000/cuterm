@@ -1,7 +1,7 @@
 #include <ncurses.h>
 #include <string.h>
 #include <signal.h>
-int panel(void);
+int panel_1(void);
 int keys(void);
 void do_resize(int dummy)
 {
@@ -15,7 +15,7 @@ int main(void)
 	//WINDOW win;
 
 	//return keys();
-	return panel();
+	return panel_1();
 
 
 
